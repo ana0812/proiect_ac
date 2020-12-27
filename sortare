@@ -1,0 +1,119 @@
+include 'emu8086.inc'
+org     100h
+
+.data   
+msg1  db 0Dh,0Ah, 'Introduceti lungimea vectorului(db): $'
+
+msg2  db 0Dh,0Ah, 'Introduceti un element(0-127):: $'  
+
+msg3  db 0Dh,0Ah, 'Vectorul sortat crescator este: $'  
+
+n_line DB 0AH,0DH,"$"   
+
+lun  dw ?
+
+vec db 127 DUP(?)
+
+.code
+
+; afisez mesajul pt a insera numarul de elemente
+mov dx, offset msg1
+mov ah, 9
+int 21h
+call    scan_num 
+
+;numarul inserat il memorez in variabila lun (lungime)
+mov     lun, cx
+
+;citesc cele n elemente de la tastatura
+mov bx, lun 
+mov si, 0
+citire:
+;afisez mesajul pt a se insera element 
+mov dx, offset msg2
+mov ah, 9
+int 21h
+call    scan_num  
+;retin elementul inserat in vector
+mov vec[si], cl
+inc si
+dec bx
+cmp bx,0
+jne citire
+je next 
+
+;in cazul in care am doar un element
+nu: 
+mov cx, lun 
+mov si, 0 
+;afisez linie noua
+lea dx, n_line
+mov ah, 9
+int 21h
+jmp afisare
+      
+;algoritmul de sortare
+next: mov SI, 1
+cmp lun,1
+je nu 
+jmp for1
+for1: mov ah,vec[SI]  
+      mov di, si
+      dec di 
+      mov bh, vec[di] 
+      jmp while
+while: cmp di,0 
+       jl for2
+       mov bh, vec[di]
+       cmp ah,bh
+       jge for2 
+       mov vec[di+1], bh
+       dec di
+       jmp while
+for2: mov vec[di+1], ah
+      inc si
+      cmp si, lun
+      jl for1
+      ;pregatesc variabilele pt afisare
+      mov cx, lun 
+      mov si, 0 
+      ;afisez linie noua
+      lea dx, n_line
+      mov ah, 9
+      int 21h
+      jge afisare
+
+
+
+afisare: 
+;afisez numarul, print num afiseaza ce este in reg ax
+mov ah, 0
+mov al, vec[si]
+call print_num 
+;afisez spatiu
+mov dl, ' '
+mov ah,2
+int 21h
+inc si
+loop afisare
+
+
+jmp     exit
+; process overlow error:
+overflow:
+   
+   printn 'we have overflow!'
+
+
+exit:
+; wait for any key press:
+mov ah, 0
+int 16h
+ret   ; return control to operating system.
+
+DEFINE_SCAN_NUM   
+DEFINE_PRINT_NUM
+DEFINE_PRINT_NUM_UNS
+
+end
+ten             DW      10      ; used as multiplier/divider by SCAN_NUM & PRINT_NUM_UNS.
